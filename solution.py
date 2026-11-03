@@ -256,7 +256,55 @@ class Solver:
         #
         # In order to ensure compatibility with tester, you should avoid adding additional arguments to this function.
         #
-        pass
+        state = self.game_env.get_init_state()
+
+        for _ in range(self.game_env.max_episode_steps):
+            if self.game_env.is_terminal(state):
+                break
+
+            valid_actions = self.game_env.get_valid_actions(state)
+
+            # choose a random action or the best known action
+            if random.random() < self.fq_epsilon:
+                action = random.choice(valid_actions)
+            else:
+                action = self.fq_select_action(state)
+
+            # perform the action and get the reward
+            next_state, reward, err_msg = self.game_env.perform_action(state, action)
+
+            # calculate the current estimated q value
+            features = self.fq_get_features(state, action)
+            current_q = 0
+
+            for i in range(len(features)):
+                current_q += self.weights[i] * features[i]
+
+            # find the highest estimated q value for the next state
+            if self.game_env.is_terminal(next_state):
+                max_next_q = 0
+            else:
+                next_actions = self.game_env.get_valid_actions(next_state)
+                max_next_q = float("-inf")
+
+                for next_action in next_actions:
+                    next_features = self.fq_get_features(next_state, next_action)
+                    next_q = 0
+
+                    for i in range(len(next_features)):
+                        next_q += self.weights[i] * next_features[i]
+
+                    if next_q > max_next_q:
+                        max_next_q = next_q
+
+            # calculate the difference between target and current q value
+            td_error = reward + self.game_env.gamma * max_next_q - current_q
+
+            # update each weight using the td error
+            for i in range(len(self.weights)):
+                self.weights[i] += self.fq_alpha * td_error * features[i]
+
+            state = next_state
 
     def fq_select_action(self, state: GameState):
         """
