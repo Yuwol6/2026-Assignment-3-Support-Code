@@ -1,8 +1,10 @@
+import random
 import sys
 import time
 
 from game_env import GameEnv
 from game_state import GameState
+
 """
 solution.py
 
@@ -67,7 +69,9 @@ class Solver:
         #
         # In order to ensure compatibility with tester, you should avoid adding additional arguments to this function.
         #
-        pass
+        self.q_dict = {}
+        self.alpha = 0.1  # learning rate
+        self.epsilon = 0.2  # exploration rate
 
     def ql_train_episode(self):
         """
@@ -83,7 +87,44 @@ class Solver:
         #
         # In order to ensure compatibility with tester, you should avoid adding additional arguments to this function.
         #
-        pass
+        state = self.game_env.get_init_state()
+
+        for _ in range(self.game_env.max_episode_steps):
+            if self.game_env.is_terminal(state):
+                break
+
+            valid_actions = self.game_env.get_valid_actions(state)
+            # exploration or exploitation
+            if random.random() < self.epsilon:
+                action = random.choice(valid_actions)
+            else:
+                action = self.ql_select_action(state)
+
+            # perform action
+            next_state, reward, err_msg = self.game_env.perform_action(state, action)
+
+            # save old Q-value
+            old_q_value = self.q_dict.get((state, action), 0)
+
+            if self.game_env.is_terminal(next_state):
+                max_next_q = 0
+            else:
+                next_valid_actions = self.game_env.get_valid_actions(next_state)
+
+                max_next_q = float("-inf")
+
+                for next_action in next_valid_actions:
+                    q_value = self.q_dict.get((next_state, next_action), 0)
+
+                    if q_value > max_next_q:
+                        max_next_q = q_value
+
+            new_q_value = old_q_value + self.alpha * (
+                reward + self.game_env.gamma * max_next_q - old_q_value
+            )
+            self.q_dict[(state, action)] = new_q_value
+
+            state = next_state
 
     def ql_select_action(self, state: GameState):
         """
@@ -98,7 +139,12 @@ class Solver:
         #
         # In order to ensure compatibility with tester, you should avoid adding additional arguments to this function.
         #
-        pass
+        valid_actions = self.game_env.get_valid_actions(state)
+
+        best_action = max(
+            valid_actions, key=lambda action: self.q_dict.get((state, action), 0)
+        )
+        return best_action
 
     # === Feature-based Q-learning =====================================================================================
 
