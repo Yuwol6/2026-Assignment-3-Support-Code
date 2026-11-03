@@ -166,7 +166,7 @@ class Solver:
         #
         # In order to ensure compatibility with tester, you should avoid adding additional arguments to this function.
         #
-        self.weights = [0.0] * 4
+        self.weights = [0.0] * 6
         self.fq_alpha = 0.01  # learning rate
         self.fq_epsilon = 0.2  # exploration rate
 
@@ -241,10 +241,29 @@ class Solver:
         max_distance = self.game_env.n_rows + self.game_env.n_cols
 
         crystal_feature = min_crystal_distance / max_distance
-        exit_feature = min_exit_distance / max_distance
+        if sum(state.crystal_status) >= self.game_env.min_samples:
+            exit_feature = min_exit_distance / max_distance
+        else:
+            exit_feature = 0
 
-        # Return the four values used to calculate the estimated q value
-        return [crystal_feature, exit_feature, danger, bias]
+        # identify whether the action is a boost or jump
+        boost_feature = 0
+        jump_feature = 0
+
+        if action[0] == "b":
+            boost_feature = 1
+        elif action[0] == "j":
+            jump_feature = 1
+
+        # Return the six values/features used to calculate the estimated q value
+        return [
+            crystal_feature,
+            exit_feature,
+            danger,
+            boost_feature,
+            jump_feature,
+            bias,
+        ]
 
     def fq_train_episode(self):
         """
