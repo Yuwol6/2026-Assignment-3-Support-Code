@@ -270,7 +270,27 @@ class Solver:
         #
         # In order to ensure compatibility with tester, you should avoid adding additional arguments to this function.
         #
-        pass
+        valid_actions = self.game_env.get_valid_actions(state)
+
+        best_action = None
+        best_q_value = float("-inf")
+
+        # find the action with the highest estimated q value
+        for action in valid_actions:
+            features = self.fq_get_features(state, action)
+
+            # calculate q value using the weights and features
+            q_value = 0
+
+            for i in range(len(features)):
+                q_value += self.weights[i] * features[i]
+
+            # update the best action if a higher q value is found
+            if q_value > best_q_value:
+                best_q_value = q_value
+                best_action = action
+
+        return best_action
 
     # === Helper Methods ===============================================================================================
     #
