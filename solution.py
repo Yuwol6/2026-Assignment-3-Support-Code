@@ -17,6 +17,9 @@ COMP3702 Assignment 3 "CrystalRover" Support Code
 
 Last updated 16/10/2026
 """
+# name: Juneyoung Jeong
+# student number: 47026313
+# github username: Yuwol6
 
 
 class Solver:
@@ -163,7 +166,9 @@ class Solver:
         #
         # In order to ensure compatibility with tester, you should avoid adding additional arguments to this function.
         #
-        pass
+        self.weights = [0.0] * 4
+        self.fq_alpha = 0.01  # learning rate
+        self.fq_epsilon = 0.2  # exploration rate
 
     def fq_get_features(self, state: GameState, action):
         """
