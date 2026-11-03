@@ -240,11 +240,14 @@ class Solver:
         # Normalise distances to approximately 0–1
         max_distance = self.game_env.n_rows + self.game_env.n_cols
 
-        crystal_feature = min_crystal_distance / max_distance
-        if sum(state.crystal_status) >= self.game_env.min_samples:
-            exit_feature = min_exit_distance / max_distance
-        else:
+        # focus on collecting crystals until enough have been collected
+        if sum(state.crystal_status) < self.game_env.min_samples:
+            crystal_feature = min_crystal_distance / max_distance
             exit_feature = 0
+        else:
+            # focus on reaching the exit after collecting enough crystals
+            crystal_feature = 0
+            exit_feature = min_exit_distance / max_distance
 
         # identify whether the action is a boost or jump
         boost_feature = 0
