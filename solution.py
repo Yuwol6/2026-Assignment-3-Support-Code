@@ -183,7 +183,68 @@ class Solver:
         #
         # In order to ensure compatibility with tester, you should avoid adding additional arguments to this function.
         #
-        pass
+        # Get the intended movement direction
+
+        match action[-1]:
+            case "l":
+                row_change, col_change = 0, -1
+            case "r":
+                row_change, col_change = 0, 1
+            case "u":
+                row_change, col_change = -1, 0
+            case "d":
+                row_change, col_change = 1, 0
+
+        # Estimate the next position
+        target_row = state.row + row_change
+        target_col = state.col + col_change
+
+        min_crystal_distance = float("inf")
+
+        for i, (row, col) in enumerate(self.game_env.crystal_positions):
+            if state.crystal_status[i] == 0:
+                distance = abs(target_row - row) + abs(target_col - col)
+
+                if distance < min_crystal_distance:
+                    min_crystal_distance = distance
+
+        # use 0 if all crystals are collected
+        if min_crystal_distance == float("inf"):
+            min_crystal_distance = 0
+
+        # find distance to the nearest exit
+        min_exit_distance = float("inf")
+
+        for row, col in self.game_env.launch_positions:
+            distance = abs(target_row - row) + abs(target_col - col)
+
+            if distance < min_exit_distance:
+                min_exit_distance = distance
+
+        # check if the intended position is dangerous
+        danger = 0
+
+        if target_row < 0 or target_row >= self.game_env.n_rows:
+            danger = 1
+        elif target_col < 0 or target_col >= self.game_env.n_cols:
+            danger = 1
+        elif self.game_env.grid_data[target_row][target_col] in (
+            self.game_env.LAVA_TILE,
+            self.game_env.ROCK_TILE,
+        ):
+            danger = 1
+
+        # add constant value for the agent to learn a baseline
+        bias = 1
+
+        # Normalise distances to approximately 0–1
+        max_distance = self.game_env.n_rows + self.game_env.n_cols
+
+        crystal_feature = min_crystal_distance / max_distance
+        exit_feature = min_exit_distance / max_distance
+
+        # Return the four values used to calculate the estimated q value
+        return [crystal_feature, exit_feature, danger, bias]
 
     def fq_train_episode(self):
         """
